@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#090b1d">
+<title>ضربه طلایی | Golden Tap نسخه ۱۳</title>
+<style>
+:root{--bg:#090b1d;--panel:#111630;--cyan:#35e8ff;--pink:#ff3bd4;--gold:#ffd84a;--green:#57ffad}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(ellipse at 50% 0%,#20265a 0%,#0b0e25 48%,#060713 100%);color:#fff;font-family:Tahoma,Arial,sans-serif;min-height:100vh;display:flex;justify-content:center;overflow-x:hidden;overflow-y:auto}
+.app{width:min(100%,520px);min-height:100svh;padding:18px 16px 24px;display:flex;flex-direction:column;gap:14px}
+header{text-align:center;padding-top:8px} .logo{font-size:clamp(28px,8vw,42px);font-weight:900;letter-spacing:1px;color:#fff;text-shadow:0 0 8px var(--cyan),0 0 22px #168cff}
+.sub{color:#aab4e8;font-size:12px;margin-top:6px;letter-spacing:1px}
+.wallet{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#111a38;border:1px solid #5263a3;border-radius:14px;padding:9px 12px;color:#ffd84a;font-weight:bold}.wallet button{background:#26345f;color:#dffaff;border:1px solid #536ca8;border-radius:10px;padding:8px 10px;font-weight:bold}.menuBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.menuBtns button{background:#182347;color:#dceaff;border:1px solid #465b9b;border-radius:11px;padding:10px 4px;font-weight:bold;font-size:12px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:linear-gradient(145deg,#171e42,#0e132d);border:1px solid #394477;border-radius:14px;padding:10px 5px;text-align:center;box-shadow:0 0 15px #18204a55}.stat small{display:block;color:#9eacd9;font-size:11px;margin-bottom:5px}.stat b{font-size:20px;color:var(--cyan)}
+.arena{position:relative;flex:1;min-height:380px;border-radius:24px;border:1px solid #46518c;background:radial-gradient(circle at 50% 45%,#1a2350,#0b1028 70%);box-shadow:inset 0 0 35px #263b8755,0 0 24px #192b6d66;overflow:hidden;touch-action:manipulation}
+.arena:before{content:"";position:absolute;inset:0;background-image:linear-gradient(#ffffff08 1px,transparent 1px),linear-gradient(90deg,#ffffff08 1px,transparent 1px);background-size:32px 32px;pointer-events:none}
+#target{position:absolute;width:76px;height:76px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#07101e;cursor:pointer;user-select:none;box-shadow:0 0 12px currentColor,0 0 30px currentColor,inset 0 0 12px #fff9;transform:translate(-50%,-50%);border:3px solid #ffffffaa}
+#target.gold{background:radial-gradient(circle at 35% 30%,#fff7b2,#ffd32f 48%,#ff8b00);color:#ffdc42}
+#target.cyan{background:radial-gradient(circle at 35% 30%,#d6ffff,#39eaff 50%,#087bff);color:#35e8ff}
+#target.green{background:radial-gradient(circle at 35% 30%,#e5fff1,#49ff9b 50%,#008b55);color:#57ffad}
+#target.purple{background:radial-gradient(circle at 35% 30%,#f3e2ff,#b65bff 50%,#6200b5);color:#bd72ff}
+#target.pink{background:radial-gradient(circle at 35% 30%,#ffe0ff,#ff49dc 50%,#a000ff);color:#ff3bd4}
+#target.bad{background:radial-gradient(circle at 35% 30%,#fff,#ff526d 55%,#9c002f);color:#ff526d}
+.centerMsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;pointer-events:none}
+.centerMsg strong{font-size:23px;color:#fff;text-shadow:0 0 14px var(--cyan);margin-bottom:10px}.centerMsg span{font-size:13px;color:#b9c4ee;line-height:2}
+.controls{display:flex;gap:10px}.btn{border:0;border-radius:14px;padding:15px 12px;font-size:16px;font-weight:bold;color:#07101e;background:linear-gradient(100deg,var(--cyan),#6a9bff);box-shadow:0 5px 20px #27dfff44;flex:1;cursor:pointer}.btn.secondary{background:#20294e;color:#dce5ff;border:1px solid #46558f;box-shadow:none}.hint{text-align:center;color:#8895c7;font-size:11px;line-height:1.8}
+#toast{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:#101832eF;border:1px solid #5267a7;border-radius:30px;padding:8px 15px;font-weight:bold;opacity:0;transition:opacity .15s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}.adslot{border:1px dashed #46517d;border-radius:12px;padding:8px;text-align:center;color:#7783b1;font-size:10px;background:#0c1024}
+.overlay{position:fixed;inset:0;background:#050716eF;display:none;align-items:center;justify-content:center;padding:22px;z-index:5}.card{width:min(100%,390px);background:linear-gradient(145deg,#1a2147,#0d122b);border:1px solid #5263a3;border-radius:22px;padding:24px;text-align:center;box-shadow:0 0 40px #203b8b88}.card h2{color:var(--cyan);margin:0 0 10px}.card p{color:#c3ccef;line-height:2;font-size:14px}.card .btn{width:100%;margin-top:10px}
+@media(max-height:720px){.app{gap:9px;padding-top:10px}.arena{min-height:300px}.logo{font-size:30px}.stat{padding:7px}.controls .btn{padding:12px}}
+
+.quickActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.quickActions .btn{font-size:13px;padding:11px 7px;min-height:44px}
+.moreMenu{background:#111a38;border:1px solid #394a7e;border-radius:13px;padding:9px 11px}
+.moreMenu summary{cursor:pointer;color:#dceaff;font-weight:bold;text-align:center;font-size:13px;padding:3px;list-style:none}
+.moreMenu summary:after{content:' + ';color:var(--cyan);font-size:16px}
+.moreMenu[open] summary:after{content:' − '}
+.moreMenu .menuBtns{margin-top:10px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.moreMenu .menuBtns button{min-height:42px;line-height:1.4}
+button,select{touch-action:manipulation}
+@media(max-width:370px){.moreMenu .menuBtns{grid-template-columns:repeat(2,minmax(0,1fr))}.wallet{font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="logo">GOLDEN TAP</div><div class="sub">نسخه ۱۳ | رتبه‌بندی جهانی • چالش روزانه • هجوم طلایی • سرعت • تمرکز</div></header>
+<div class="wallet"><span>کیف پول: <b id="coins">۰</b> سکه</span><span id="lives">جان: ۳</span><span id="combo">زنجیره: ۰</span></div>
+<div class="quickActions"><button class="btn secondary" id="stagesBtn">مسیر مراحل</button><button class="btn" id="challengeBtn">چالش امروز</button><button class="btn secondary" id="rushBtn">هجوم طلایی</button><button class="btn secondary" id="dailyBtn">پاداش روزانه</button></div>
+<details class="moreMenu"><summary>امکانات بیشتر</summary><div class="menuBtns"><button id="wheelBtn">گردونه شانس</button><button id="shopBtn">فروشگاه پوسته‌ها</button><button id="missionsBtn">ماموریت‌های روزانه</button><button id="rankBtn">رتبه‌بندی جهانی</button><button id="profileBtn">نام بازیکن</button><button id="progressBtn">سطح و تجربه</button><button id="weeklyBtn">چالش هفتگی</button><button id="backupBtn">پشتیبان‌گیری</button><button id="adBtn">تبلیغ جایزه‌ای</button></div></details>
+<section class="stats">
+ <div class="stat"><small>امتیاز</small><b id="score">۰</b></div>
+ <div class="stat"><small>زمان</small><b id="time">۳۰</b></div>
+ <div class="stat"><small>رکورد</small><b id="best">۰</b></div>
+</section>
+<main class="arena" id="arena">
+ <div class="centerMsg" id="intro"><strong>آماده‌ای؟</strong><span>هدف‌های طلایی و آبی را لمس کن.<br>به هدف قرمز دست نزن!<br>هر ۵ ضربه درست، هجوم طلایی ۵ ثانیه‌ای و امتیاز دوبرابر می‌دهد.</span></div>
+ <div id="target"></div><div id="toast"></div><div id="rushBadge" style="display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 15px;border-radius:20px;background:#ffd84a;color:#241700;font-weight:900;box-shadow:0 0 22px #ffd84a99;white-space:nowrap">GOLDEN RUSH ×۲</div>
+</main>
+<div style="display:flex;gap:8px;align-items:center"><label for="mode" style="color:#b9c4ee;font-size:12px;white-space:nowrap">حالت بازی:</label><select id="mode" style="flex:1;padding:11px;border-radius:10px;background:#182347;color:#fff;border:1px solid #465b9b;font-weight:bold"><option value="15">سرعتی — ۱۵ ثانیه</option><option value="30" selected>کلاسیک — ۳۰ ثانیه</option><option value="45">هجوم طلایی — ۴۵ ثانیه</option><option value="60">استقامتی — ۶۰ ثانیه</option></select></div>
+<div class="controls"><button class="btn" id="start">بازی سریع</button><button class="btn secondary" id="sound">صدا: خاموش</button></div>
+<div class="hint">قانون بازی ساده است: طلایی و آبی را بزن؛ قرمز را نزن. هر دور کوتاه است. رکورد جهانی با اتصال سرور ثبت می‌شود.</div>
+<div class="adslot">جایگاه تبلیغ جایزه‌ای — اتصال تبلیغات واقعی در مرحله انتشار انجام می‌شود</div>
+</div>
+<div class="overlay" id="feature"><div class="card"><h2 id="featureTitle">فروشگاه</h2><div id="featureBody"></div><button class="btn secondary" id="featureClose">بستن</button></div></div>
+<div class="overlay" id="end">
+ <div class="card"><h2 id="endTitle">پایان بازی!</h2><p id="result"></p><button class="btn" id="again">دوباره بازی کن</button><button class="btn secondary" id="share">اشتراک‌گذاری امتیاز</button><button class="btn secondary" id="close">بازگشت</button></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const arena=$('arena'),target=$('target');let score=0,time=30,timer=null,active=false,level=1,soundOn=false,spawnTimer=null,lives=3,extraLifeUsed=false,combo=0,lastHitAt=0;let gameDuration=30;
+let coins=Number(localStorage.getItem('goldentap_coins')||0),skin=localStorage.getItem('goldentap_skin')||'gold';
+let roundsPlayed=0,targetsHit=0;
+let rushUntil=0, rushMode=false, challengeActive=false, challengeType=null, challengeHits=0, challengeBestCombo=0;
+let activeStage=0,weeklyActive=false;
+let stageData=readJSON('goldentap_stages',{unlocked:1,completed:[]});
+if(!stageData||typeof stageData!=='object')stageData={unlocked:1,completed:[]};
+if(!Array.isArray(stageData.completed))stageData.completed=[];
+if(!Number.isFinite(Number(stageData.unlocked)))stageData.unlocked=1;stageData.unlocked=Math.max(1,Math.min(10,Number(stageData.unlocked))); 
+const stageGoals=[25,35,45,60,75,90,110,130,155,180];
+function saveStages(){localStorage.setItem('goldentap_stages',JSON.stringify(stageData));}
+function weekKey(){const d=new Date();const jan=new Date(d.getFullYear(),0,1);const week=Math.ceil((((d-jan)/86400000)+jan.getDay()+1)/7);return d.getFullYear()+'-W'+week;}
+let xp=Number(localStorage.getItem('goldentap_xp')||0), playerLevel=Number(localStorage.getItem('goldentap_level')||1);
+function xpNeed(l){return 100+(l-1)*60}
+function rankName(l){return l<3?'تازه‌کار':l<6?'ماهر':l<10?'حرفه‌ای':l<20?'استاد':'افسانه‌ای'}
+function saveProgress(){localStorage.setItem('goldentap_xp',xp);localStorage.setItem('goldentap_level',playerLevel)}
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function dailyChallenge(){const day=today();let h=0;for(let i=0;i<day.length;i++)h=(h*31+day.charCodeAt(i))>>>0;const options=[{id:'score',title:'در ۳۰ ثانیه حداقل ۹۰ امتیاز بگیر',goal:90,unit:'امتیاز'},{id:'hits',title:'در ۳۰ ثانیه ۱۸ هدف درست را لمس کن',goal:18,unit:'ضربه'},{id:'combo',title:'زنجیره ۸تایی بساز',goal:8,unit:'زنجیره'}];return options[h%options.length]}
+function challengeDone(){return localStorage.getItem('goldentap_daily_challenge_done')===today()}
+function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v===null?fallback:v}catch(e){return fallback}}
+let dailyData=readJSON('goldentap_missions',{});
+function missionState(){if(!dailyData||dailyData.date!==today())dailyData={date:today(),rounds:0,hits:0,best:0,claimed:[]};if(!Array.isArray(dailyData.claimed))dailyData.claimed=[];}
+missionState();function saveMissions(){localStorage.setItem('goldentap_missions',JSON.stringify(dailyData));}function saveCoins(){localStorage.setItem('goldentap_coins',coins);$('coins').textContent=fa(coins)}saveCoins();
+let best=Number(localStorage.getItem('goldentap_best')||0);let modeBest=Number(localStorage.getItem('goldentap_best_'+gameDuration)||0);$('best').textContent=fa(best);
+function fa(n){return Number(n).toLocaleString('fa-IR')}
+function beep(freq=650,duration=.07){if(!soundOn)return;try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=freq;o.connect(g);g.connect(c.destination);g.gain.value=.035;o.start();o.stop(c.currentTime+duration);o.onended=()=>c.close()}catch(e){}}
+function toast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),500)}
+function spawn(){
+ if(!active)return;
+ const r=arena.getBoundingClientRect(),pad=48;
+ target.style.left=(pad+Math.random()*(r.width-pad*2))+'px';
+ target.style.top=(pad+Math.random()*(r.height-pad*2))+'px';
+ const roll=Math.random();let type=roll<.62?'gold':roll<.88?'cyan':'bad';
+ target.dataset.kind=type;target.className=type==='gold'?skin:type;target.textContent=type==='gold'?'+':type==='cyan'?'★':'×';target.style.display='flex';
+ const life=Math.max(440,(rushMode?820:1150)-level*65);
+ clearTimeout(spawnTimer);spawnTimer=setTimeout(()=>{if(active){target.style.display='none';spawn()}},life);
+}
+function start(stage=0,weekly=false,challenge=false,rush=false){
+ activeStage=stage;weeklyActive=weekly;challengeActive=challenge;rushMode=rush;challengeHits=0;challengeBestCombo=0;rushUntil=0;$ ('rushBadge').style.display='none';
+ clearInterval(timer);clearTimeout(spawnTimer);gameDuration=weekly?60:((stage||challenge)?30:(rush?45:(Number($('mode').value)||30)));if(weekly)$('mode').value='60';if(stage||challenge)$('mode').value='30';if(rush)$('mode').value='45';modeBest=Number(localStorage.getItem('goldentap_best_'+gameDuration)||0);score=0;time=gameDuration;level=1;lives=3;extraLifeUsed=false;combo=0;lastHitAt=0;$('combo').textContent='زنجیره: ۰';$('lives').textContent='جان: ۳';active=true;
+ $('score').textContent=fa(score);$('time').textContent=fa(time);$('best').textContent=fa(modeBest);$('intro').style.display='none';$('end').style.display='none';$('start').textContent='در حال بازی...';spawn();
+ timer=setInterval(()=>{time--;if(Date.now()>=rushUntil)$('rushBadge').style.display='none';else $('rushBadge').textContent='GOLDEN RUSH ×۲ | '+fa(Math.max(1,Math.ceil((rushUntil-Date.now())/1000)))+' ثانیه';if(time%8===0&&level<4){level++;toast('مرحله '+fa(level)+'؛ سریع‌تر!')}$('time').textContent=fa(time);if(time<=0)finish()},1000);
+}
+function finish(){
+ if(!active)return;active=false;roundsPlayed++;
+ let stageMessage='';
+ if(activeStage){const idx=activeStage-1;if(score>=stageGoals[idx]){if(!stageData.completed.includes(activeStage)){stageData.completed.push(activeStage);stageData.unlocked=Math.min(10,Math.max(stageData.unlocked,activeStage+1));const prize=20+activeStage*5;coins+=prize;saveCoins();stageMessage='<br><b style="color:#57ffad">مرحله '+fa(activeStage)+' تکمیل شد! جایزه: '+fa(prize)+' سکه</b>';saveStages();}}else stageMessage='<br><b style="color:#ff8296">این بار به امتیاز لازم نرسیدی؛ دوباره تلاش کن.</b>';activeStage=0;}
+ if(weeklyActive){const wk=weekKey(),claimed=localStorage.getItem('goldentap_weekly_claimed');if(score>=120&&claimed!==wk){coins+=100;saveCoins();localStorage.setItem('goldentap_weekly_claimed',wk);stageMessage+='<br><b style="color:#ffd84a">چالش هفتگی موفق! ۱۰۰ سکه جایزه گرفتی.</b>';}else if(score<120)stageMessage+='<br><b style="color:#ff8296">برای جایزه هفتگی باید حداقل ۱۲۰ امتیاز بگیری.</b>';else stageMessage+='<br><b>جایزه این هفته را قبلاً گرفته‌ای.</b>';weeklyActive=false;}
+ if(challengeActive){const c=dailyChallenge();const value=c.id==='score'?score:c.id==='hits'?challengeHits:challengeBestCombo;if(value>=c.goal&&!challengeDone()){coins+=60;saveCoins();localStorage.setItem('goldentap_daily_challenge_done',today());stageMessage+='<br><b style="color:#57ffad">چالش روزانه کامل شد! ۶۰ سکه جایزه گرفتی.</b>';}else if(challengeDone())stageMessage+='<br><b>جایزه چالش امروز قبلاً دریافت شده است.</b>';else stageMessage+='<br><b style="color:#ff8296">چالش امروز کامل نشد؛ دوباره تلاش کن.</b>';challengeActive=false;}missionState();dailyData.rounds++;dailyData.best=Math.max(dailyData.best,score);saveMissions();
+ let records=readJSON('goldentap_records',[]);if(!Array.isArray(records))records=[];records.push({name:playerName||'بازیکن',score:score,mode:gameDuration,date:new Date().toLocaleDateString('fa-IR')});records.sort((a,b)=>b.score-a.score);records=records.slice(0,10);localStorage.setItem('goldentap_records',JSON.stringify(records));
+ submitOnlineScore(score,gameDuration);
+clearInterval(timer);clearTimeout(spawnTimer);target.style.display='none';$('rushBadge').style.display='none';rushMode=false;$('start').textContent='بازی سریع';
+ const earned=Math.floor(score/10);coins+=earned;saveCoins();
+ const gainedXP=Math.max(10,Math.floor(score/2));xp+=gainedXP;let leveled=false;while(xp>=xpNeed(playerLevel)){xp-=xpNeed(playerLevel);playerLevel++;leveled=true;}saveProgress();
+ if(score>best){best=score;localStorage.setItem('goldentap_best',best)}if(score>modeBest){modeBest=score;localStorage.setItem('goldentap_best_'+gameDuration,modeBest);$('endTitle').textContent='رکورد جدید در این حالت!'}else $('endTitle').textContent='پایان بازی!';$('best').textContent=fa(modeBest);
+ $('result').innerHTML='امتیاز تو: <b style="color:#ffd84a">'+fa(score)+'</b><br>رکوردت: <b style="color:#35e8ff">'+fa(best)+'</b><br>سکه‌های این بازی: <b style="color:#57ffad">+'+fa(earned)+'</b>'+stageMessage+'<br><br>برای ادامه، بازی سریع را بزن یا مرحله بعدی را از مسیر انتخاب کن.';
+ $('end').style.display='flex';
+}
+target.addEventListener('pointerdown',e=>{
+ e.preventDefault();if(!active)return;
+ clearTimeout(spawnTimer);
+ if(target.dataset.kind==='bad'){combo=0;$('combo').textContent='زنجیره: ۰';score=Math.max(0,score-3);lives--; $('lives').textContent='جان: '+fa(lives);toast('هدف قرمز! یک جان کم شد');beep(170,.13);if(lives<=0){$('score').textContent=fa(score);finish();return}}
+ else{const now=Date.now();combo=(now-lastHitAt<=1400)?combo+1:1;lastHitAt=now;challengeHits++;challengeBestCombo=Math.max(challengeBestCombo,combo);const base=target.dataset.kind==='gold'?10:15;const bonus=(combo%5===0)?10:0;const chainBonus=combo>=10?5:combo>=5?2:0;if(combo%5===0){rushUntil=now+5000;$('rushBadge').style.display='block';$('rushBadge').textContent='GOLDEN RUSH ×۲ | '+fa(5)+' ثانیه';toast('هجوم طلایی فعال شد! امتیاز دوبرابر');}const inRush=now<rushUntil;score+=(base+bonus+chainBonus)*(inRush?2:1);$('combo').textContent='زنجیره: '+fa(combo)+(inRush?' | هجوم ×۲':'');missionState();dailyData.hits++;saveMissions();toast(inRush?'هجوم طلایی! امتیاز دوبرابر':bonus?'زنجیره '+fa(combo)+'! جایزه +۱۰':chainBonus?'ضریب زنجیره فعال شد! +'+fa(chainBonus):(base===10?'+۱۰ امتیاز':'+۱۵ امتیاز'));beep(target.dataset.kind==='gold'?720:950)}
+ $('score').textContent=fa(score);target.style.display='none';spawn();
+});
+$('start').onclick=()=>{if(!active)start();};$('again').onclick=()=>{if(!active)start();};$('close').onclick=()=>{$('end').style.display='none';$('intro').style.display='flex';$('start').textContent='بازی سریع';};
+$('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent='صدا: '+(soundOn?'روشن':'خاموش');beep()};
+
+function panel(title,html){$('featureTitle').textContent=title;$('featureBody').innerHTML=html;$('feature').style.display='flex'}
+$('featureClose').onclick=()=>$('feature').style.display='none';
+$('dailyBtn').onclick=()=>{const last=localStorage.getItem('goldentap_daily'),streak=Number(localStorage.getItem('goldentap_streak')||0);if(last===today()){panel('پاداش روزانه','<p>پاداش امروز را قبلاً دریافت کرده‌ای.</p><p>زنجیره ورود: '+fa(streak)+' روز</p>');return;}const y=new Date();y.setDate(y.getDate()-1);const yesterday=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');const next=last===yesterday?streak+1:1;const reward=Math.min(25+next*5,75);localStorage.setItem('goldentap_streak',next);localStorage.setItem('goldentap_daily',today());coins+=reward;saveCoins();panel('پاداش روزانه','<p style="color:#57ffad;font-size:22px">+'+fa(reward)+' سکه</p><p>زنجیره ورود: '+fa(next)+' روز</p><p>فردا برای جایزه بیشتر برگرد!</p>')};
+$('wheelBtn').onclick=()=>{if(localStorage.getItem('goldentap_wheel')===today()){panel('گردونه شانس','<p>امروز یک بار از گردونه استفاده کرده‌ای. فردا دوباره بیا!</p>');return}panel('گردونه شانس','<p>شانس خودت را امتحان کن؛ جایزه بین ۵ تا ۵۰ سکه است.</p><button class="btn" id="spin">چرخاندن گردونه</button>');$('spin').onclick=()=>{const prize=[5,10,15,20,30,50][Math.floor(Math.random()*6)];coins+=prize;saveCoins();localStorage.setItem('goldentap_wheel',today());panel('نتیجه گردونه','<p style="color:#ffd84a;font-size:24px">'+fa(prize)+' سکه برنده شدی!</p>')}};
+$('shopBtn').onclick=()=>panel('فروشگاه پوسته‌ها','<p>ظاهر هدف‌های طلایی را عوض کن.</p><button class="btn" data-skin="pink" data-cost="40">صورتی نئونی — ۴۰ سکه</button><button class="btn secondary" data-skin="purple" data-cost="70">بنفش کهکشانی — ۷۰ سکه</button><button class="btn secondary" data-skin="green" data-cost="100">سبز زمردی — ۱۰۰ سکه</button><button class="btn secondary" data-skin="gold" data-cost="0">طلایی کلاسیک — رایگان</button><button class="btn secondary" id="buyLife">خرید یک جان اضافه — ۳۰ سکه</button><small>پوسته‌های خریداری‌شده در همین دستگاه ذخیره می‌شوند.</small>');
+document.addEventListener('click',e=>{if(e.target.dataset.skin){const chosen=e.target.dataset.skin,cost=Number(e.target.dataset.cost||0);if(coins>=cost){coins-=cost;skin=chosen;localStorage.setItem('goldentap_skin',skin);saveCoins();panel('پوسته فعال شد','<p>پوسته انتخابی با موفقیت فعال شد.</p>')}else panel('سکه کافی نیست','<p>برای این پوسته به '+fa(cost)+' سکه نیاز داری.</p>')}if(e.target.id==='buyLife'){if(active&&!extraLifeUsed&&coins>=30){coins-=30;lives++;extraLifeUsed=true;saveCoins();$('lives').textContent='جان: '+fa(lives);panel('خرید موفق','<p>یک جان اضافه شد.</p>')}else panel('امکان خرید نیست','<p>بازی باید در جریان باشد، فقط یک بار در هر دور می‌توانی جان بخری و ۳۰ سکه لازم است.</p>')}});
+
+$('missionsBtn').onclick=()=>{
+ missionState();const tasks=[
+  {id:'rounds',title:'۳ دور بازی کن',value:dailyData.rounds||0,goal:3,reward:20},
+  {id:'hits',title:'۲۰ هدف را لمس کن',value:dailyData.hits||0,goal:20,reward:25},
+  {id:'best',title:'در یک دور ۱۰۰ امتیاز بگیر',value:dailyData.best||0,goal:100,reward:30}
+ ];
+ const html=tasks.map(t=>{const done=t.value>=t.goal,claimed=(dailyData.claimed||[]).includes(t.id);return `<p style="text-align:right;border-bottom:1px solid #394477;padding:8px 0">${t.title}<br><b style="color:#35e8ff">${fa(Math.min(t.value,t.goal))} / ${fa(t.goal)}</b><br><button class="btn ${done&&!claimed?'':'secondary'}" data-mission="${t.id}" ${done&&!claimed?'':'disabled'}>${claimed?'دریافت شد':done?'دریافت '+fa(t.reward)+' سکه':'جایزه '+fa(t.reward)+' سکه'}</button></p>`}).join('');
+ panel('ماموریت‌های امروز',html+'<small style="color:#9eacd9">ماموریت‌ها هر روز تازه می‌شوند.</small>');
+};
+$('progressBtn').onclick=()=>{const need=xpNeed(playerLevel);panel('مسیر پیشرفت','<p style="font-size:22px;color:#ffd84a">سطح '+fa(playerLevel)+' — '+rankName(playerLevel)+'</p><p>تجربه فعلی: '+fa(xp)+' / '+fa(need)+' XP</p><div style="height:14px;background:#080d20;border-radius:20px;overflow:hidden;border:1px solid #5263a3"><div style="height:100%;width:'+Math.min(100,xp/need*100)+'%;background:linear-gradient(90deg,#35e8ff,#57ffad)"></div></div><p>با هر بازی تجربه بگیر، سطح خودت را بالا ببر و به رتبه افسانه‌ای برس.</p><small style="color:#9eacd9">پیشرفت فعلاً روی همین دستگاه ذخیره می‌شود؛ همگام‌سازی جهانی در مرحله سرور اضافه خواهد شد.</small>')};
+function showStages(){
+ const html=Array.from({length:10},(_,i)=>{const n=i+1,done=stageData.completed.includes(n),unlocked=n<=stageData.unlocked;return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;margin:7px 0;border:1px solid ${done?'#57ffad':unlocked?'#35e8ff':'#394477'};border-radius:12px;background:#0c1430"><div style="text-align:right"><b style="color:${done?'#57ffad':unlocked?'#35e8ff':'#8792ba'}">مرحله ${fa(n)} ${done?'✓':unlocked?'':'قفل'}</b><br><small>هدف: ${fa(stageGoals[i])} امتیاز در ۳۰ ثانیه</small></div><button class="btn ${unlocked?'':'secondary'}" style="flex:0 0 105px;padding:10px 5px;font-size:12px" data-stage="${n}" ${unlocked?'':'disabled'}>${done?'تکرار':'شروع'}</button></div>`}).join('');
+ panel('نقشه ۱۰ مرحله‌ای',html+'<small style="color:#aab4e8">با تکمیل هر مرحله، مرحله بعدی باز می‌شود. هر مرحله فقط یک بار جایزه اصلی می‌دهد.</small>');
+}
+$('stagesBtn').onclick=showStages;
+$('challengeBtn').onclick=()=>{const c=dailyChallenge();const done=challengeDone();panel('چالش امروز','<p style="color:#35e8ff;font-size:17px">'+c.title+'</p><p>جایزه: <b style="color:#ffd84a">۶۰ سکه</b></p><p>'+(done?'چالش امروز را کامل کرده‌ای؛ فردا چالش تازه‌ای می‌آید.':'می‌توانی چند بار تلاش کنی تا موفق شوی.')+'</p><button class="btn" id="startChallenge" '+(done?'disabled':'')+'>شروع چالش</button><small>چالش امروز برای همه بازیکنان یکسان است؛ برای ثبت رتبه جهانی، اتصال سرور باید تنظیم شده باشد.</small>');const b=$('startChallenge');if(b)b.onclick=()=>{$('feature').style.display='none';start(0,false,true,false);};};
+$('rushBtn').onclick=()=>{if(active)return; $('feature').style.display='none';start(0,false,false,true);toast('هجوم طلایی را شروع کن؛ هر ۵ ضربه، ۵ ثانیه امتیاز دوبرابر!')};
+document.addEventListener('click',e=>{const n=Number(e.target.dataset.stage);if(!n)return;if(n>stageData.unlocked)return;$('feature').style.display='none';$('mode').value='30';start(n,false);});
+$('weeklyBtn').onclick=()=>{const wk=weekKey(),claimed=localStorage.getItem('goldentap_weekly_claimed')===wk;panel('چالش هفتگی','<p>در حالت استقامتی ۶۰ ثانیه‌ای بازی کن و حداقل ۱۲۰ امتیاز بگیر.</p><p style="color:#ffd84a;font-size:22px">جایزه: ۱۰۰ سکه</p><p>'+(claimed?'جایزه این هفته را دریافت کرده‌ای.':'این چالش تا پایان هفته در همین دستگاه فعال است.')+'</p><button class="btn" id="startWeekly" '+(claimed?'disabled':'')+'>شروع چالش هفتگی</button><small>چالش و جایزه فعلاً محلی هستند و بین دستگاه‌ها همگام نمی‌شوند.</small>');const b=$('startWeekly');if(b)b.onclick=()=>{$('feature').style.display='none';start(0,true);};};
+$('rankBtn').onclick=()=>showOnlineBoard('global');
+$('mode').addEventListener('change',()=>{if(!active){gameDuration=Number($('mode').value);modeBest=Number(localStorage.getItem('goldentap_best_'+gameDuration)||0);$('best').textContent=fa(modeBest);$('time').textContent=fa(gameDuration)}});
+let playerName=localStorage.getItem('goldentap_player')||'بازیکن';
+function makePlayerId(){try{return crypto.randomUUID()}catch(e){return 'gt-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14)}}
+let playerId=localStorage.getItem('goldentap_player_id');if(!playerId){playerId=makePlayerId();localStorage.setItem('goldentap_player_id',playerId)}
+let onlineApiUrl=(localStorage.getItem('goldentap_online_api')||'').trim();
+function cleanName(v){return String(v||'بازیکن').replace(/[<>\"'&]/g,'').trim().slice(0,18)||'بازیکن'}
+function configureOnline(){const current=onlineApiUrl||'';const v=prompt('آدرس عمومی تابع آنلاین Supabase را وارد کن:\nنمونه: https://PROJECT.supabase.co/functions/v1/golden-tap',current);if(v===null)return;onlineApiUrl=v.trim().replace(/\/$/,'');if(onlineApiUrl){localStorage.setItem('goldentap_online_api',onlineApiUrl);toast('آدرس سرور ذخیره شد')}else{localStorage.removeItem('goldentap_online_api');toast('اتصال آنلاین غیرفعال شد')}}
+async function onlineRequest(payload){if(!onlineApiUrl)throw new Error('سرور آنلاین هنوز تنظیم نشده است');const res=await fetch(onlineApiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,player_id:playerId,player_name:cleanName(playerName)})});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||'ارتباط با سرور ناموفق بود');return data}
+async function submitOnlineScore(value,mode){if(!onlineApiUrl)return;try{await onlineRequest({action:'submit',score:value,mode})}catch(e){console.warn('Golden Tap online submit:',e.message)}}
+async function showOnlineBoard(kind='global'){if(!onlineApiUrl){panel('اتصال به رتبه‌بندی جهانی','<p>برای نمایش رتبه‌های واقعی، سرور آنلاین باید راه‌اندازی و آدرس آن ثبت شود.</p><button class="btn" id="setOnlineApi">تنظیم آدرس سرور</button><small>شناسه بازیکن این دستگاه ساخته شده و با پاک‌کردن اطلاعات مرورگر ممکن است از دست برود.</small>');$('setOnlineApi').onclick=()=>{configureOnline();showOnlineBoard(kind)};return}panel('رتبه‌بندی آنلاین','<p>در حال دریافت رتبه‌ها...</p><button class="btn secondary" id="globalTab">جدول جهانی</button><button class="btn secondary" id="dailyTab">امروز</button><button class="btn secondary" id="changeApi">تنظیم سرور</button><div id="onlineRows"></div>');$('globalTab').onclick=()=>showOnlineBoard('global');$('dailyTab').onclick=()=>showOnlineBoard('daily');$('changeApi').onclick=()=>{configureOnline();showOnlineBoard(kind)};try{const data=await onlineRequest({action:'leaderboard',board:kind,mode:gameDuration});const rows=kind==='daily'?(data.daily||[]):(data.global||[]);const html=rows.length?rows.map((r,i)=>'<p style="text-align:right;border-bottom:1px solid #394477;padding:7px 0">'+fa(i+1)+'. <b style="color:#57ffad">'+cleanName(r.player_name)+'</b> — '+fa(r.score)+' امتیاز</p>').join(''):'<p>هنوز رکوردی برای این جدول ثبت نشده است.</p>';$('onlineRows').innerHTML='<p style="color:#35e8ff">'+(kind==='daily'?'۱۰ رکورد برتر امروز':'۱۰ رکورد برتر جهان')+' | حالت '+fa(gameDuration)+' ثانیه</p>'+html+'<small style="color:#9eacd9">شناسه: '+playerId.slice(0,8)+'…</small>'}catch(e){$('onlineRows').innerHTML='<p style="color:#ff8296">دریافت رتبه‌ها انجام نشد: '+String(e.message).replace(/[<>]/g,'')+'</p><small>اتصال اینترنت و آدرس سرور را بررسی کن.</small>'}}
+$('profileBtn').onclick=()=>{panel('نام بازیکن','<p>نامی انتخاب کن تا هنگام اشتراک‌گذاری رکوردت نمایش داده شود.</p><input id="playerInput" maxlength="18" value="'+playerName.replace(/[&<>"']/g,'')+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid #5263a3;background:#0b1028;color:white;text-align:center"><button class="btn" id="savePlayer">ذخیره نام</button>');$('savePlayer').onclick=()=>{const v=$('playerInput').value.trim().slice(0,18);if(v){playerName=v;localStorage.setItem('goldentap_player',v)}panel('ذخیره شد','<p>نام بازیکن: '+playerName.replace(/[&<>]/g,'')+'</p>')}};
+$('share').onclick=async()=>{const msg=playerName+' در بازی Golden Tap ('+fa(gameDuration)+' ثانیه) '+fa(score)+' امتیاز گرفت! رکوردش در این حالت '+fa(modeBest)+' است. تو هم امتحان کن.';try{if(navigator.share)await navigator.share({title:'رکورد Golden Tap',text:msg});else if(navigator.clipboard){await navigator.clipboard.writeText(msg);$('share').textContent='متن کپی شد';}else{panel('اشتراک‌گذاری', '<p>'+msg+'</p>')}}catch(e){}};
+$('backupBtn').onclick=()=>{
+ const keys=['goldentap_coins','goldentap_skin','goldentap_best','goldentap_best_15','goldentap_best_30','goldentap_best_45','goldentap_best_60','goldentap_daily_challenge_done','goldentap_records','goldentap_missions','goldentap_daily','goldentap_wheel','goldentap_player','goldentap_player_id','goldentap_xp','goldentap_level','goldentap_streak','goldentap_stages','goldentap_weekly_claimed'];
+ const data={app:'Golden Tap',version:13,createdAt:new Date().toISOString(),data:{}};keys.forEach(k=>{const v=localStorage.getItem(k);if(v!==null)data.data[k]=v});
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='golden-tap-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);panel('پشتیبان‌گیری انجام شد','<p style="color:#57ffad">فایل پشتیبان دانلود شد. آن را در جای امن نگه دار تا اطلاعات و رکوردهایت از بین نرود.</p><small>این فایل شامل سکه‌ها، رکوردها، نام بازیکن و پیشرفت بازی است.</small>');
+};
+$('adBtn').onclick=()=>panel('تبلیغ جایزه‌ای','<p>این بخش برای اتصال تبلیغات ویدیویی جایزه‌دار آماده شده است.</p><p style="color:#ffd84a">در این نسخه تبلیغ واقعی پخش نمی‌شود و جایزه‌ای هم ثبت نمی‌شود. این بخش تا زمان اتصال SDK تبلیغات صرفاً نمایشی است.</p><small>برای درآمد واقعی باید بازی در قالب اپ منتشر و به شبکه تبلیغاتی سازگار با کشور انتشار متصل شود.</small>');
+document.addEventListener('click',e=>{const id=e.target.dataset.mission;if(!id)return;missionState();const goals={rounds:20,hits:25,best:30};const vals={rounds:dailyData.rounds||0,hits:dailyData.hits||0,best:dailyData.best||0};const limits={rounds:3,hits:20,best:100};if(vals[id]>=limits[id]&&!(dailyData.claimed||[]).includes(id)){coins+=goals[id];dailyData.claimed=[...(dailyData.claimed||[]),id];saveCoins();saveMissions();$('missionsBtn').click();}});
+
+arena.addEventListener('pointerdown',e=>{if(active&&e.target===arena){toast('هدف‌های روشن را لمس کن');}});
+</script>
+</body>
+</html>
