@@ -9,51 +9,70 @@ import android.webkit.JavascriptInterface;
 
 public class MainActivity extends Activity {
 
-    private WebView webView;
+private WebView webView;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-        try {
-            webView = new WebView(this);
+    webView = new WebView(this);
 
-            WebSettings settings = webView.getSettings();
+    WebSettings settings = webView.getSettings();
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setAllowFileAccess(true);
+    settings.setAllowContentAccess(true);
 
-            settings.setJavaScriptEnabled(true);
-            settings.setDomStorageEnabled(true);
-            settings.setAllowFileAccess(true);
-            settings.setAllowContentAccess(true);
+    webView.addJavascriptInterface(
+            new AdBridge(),
+            "AndroidAds"
+    );
 
-            webView.addJavascriptInterface(
-                    new AdBridge(),
-                    "AndroidAds"
-            );
+    webView.setWebViewClient(new WebViewClient());
 
-            webView.setWebViewClient(new WebViewClient() {
+    setContentView(webView);
 
-                @Override
-                public void onPageFinished(
-                        WebView view,
-                        String url) {
+    webView.loadUrl(
+            "file:///android_asset/index.html"
+    );
+}
 
-                    String script =
-                        "(function() {" +
+public class AdBridge {
 
-                        "window.__goldenTapAdCounter=0;" +
-                        "window.__goldenTapAdPending={};" +
+    @JavascriptInterface
+    public void showRewardedAd(
+            String placement,
+            String callbackId
+    ) {
+        runOnUiThread(() -> {
 
-                        "window.__goldenTapAdResult=function(id,ok) {" +
-                        "var r=window.__goldenTapAdPending[id];" +
-                        "if(r) {" +
-                        "delete window.__goldenTapAdPending[id];" +
-                        "r(!!ok);" +
-                        "}" +
-                        "};" +
+            if (callbackId == null ||
+                    !callbackId.matches("\\d+")) {
+                return;
+            }
 
-                        "window.GoldenTapAds={" +
-                        "showRewarded:function(placement) {" +
-                        "return new Promise(function(resolve) {" +
-                        "var id=String(++window.__goldenTapAdCounter);" +
-                        "window.__goldenTapAdPending[id]=resolve;" +
-                        "window
+            String script =
+                    "if(window.__goldenTapAdResult){" +
+                    "window.__goldenTapAdResult('" +
+                    callbackId +
+                    "',false);" +
+                    "}";
+
+            webView.evaluateJavascript(script, null);
+        });
+    }
+}
+
+@Override
+protected void onDestroy() {
+
+    if (webView != null) {
+        webView.stopLoading();
+        webView.destroy();
+        webView = null;
+    }
+
+    super.onDestroy();
+}
+
+}
