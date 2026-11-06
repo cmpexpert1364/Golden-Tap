@@ -2,77 +2,84 @@ package com.cmpexpert1364.goldentap;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.webkit.JavascriptInterface;
 
+import com.adivery.sdk.Adivery;
+
 public class MainActivity extends Activity {
 
-private WebView webView;
+    private static final String APP_KEY =
+            "2edbcef3-2bdb-4543-98c2-8e63eeac4fd1";
 
-@Override
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+    private WebView webView;
 
-    webView = new WebView(this);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    WebSettings settings = webView.getSettings();
-    settings.setJavaScriptEnabled(true);
-    settings.setDomStorageEnabled(true);
-    settings.setAllowFileAccess(true);
-    settings.setAllowContentAccess(true);
+        webView = new WebView(this);
 
-    webView.addJavascriptInterface(
-            new AdBridge(),
-            "AndroidAds"
-    );
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setAllowFileAccess(true);
 
-    webView.setWebViewClient(new WebViewClient());
+        webView.addJavascriptInterface(
+                new AdBridge(),
+                "AndroidAds"
+        );
 
-    setContentView(webView);
+        webView.setWebViewClient(new WebViewClient());
 
-    webView.loadUrl(
-            "file:///android_asset/index.html"
-    );
-}
+        setContentView(webView);
 
-public class AdBridge {
+        webView.loadUrl(
+                "file:///android_asset/index.html"
+        );
 
-    @JavascriptInterface
-    public void showRewardedAd(
-            String placement,
-            String callbackId
-    ) {
-        runOnUiThread(() -> {
+        try {
+            Adivery.configure(getApplication(), APP_KEY);
+            Log.d("GoldenTap", "Adivery initialized");
 
-            if (callbackId == null ||
-                    !callbackId.matches("\\d+")) {
-                return;
-            }
-
-            String script =
-                    "if(window.__goldenTapAdResult){" +
-                    "window.__goldenTapAdResult('" +
-                    callbackId +
-                    "',false);" +
-                    "}";
-
-            webView.evaluateJavascript(script, null);
-        });
-    }
-}
-
-@Override
-protected void onDestroy() {
-
-    if (webView != null) {
-        webView.stopLoading();
-        webView.destroy();
-        webView = null;
+        } catch (Exception e) {
+            Log.e("GoldenTap", "Adivery initialization failed", e);
+        }
     }
 
-    super.onDestroy();
-}
+    public class AdBridge {
 
+        @JavascriptInterface
+        public void showRewardedAd(
+                String placement,
+                String callbackId
+        ) {
+            runOnUiThread(() -> {
+
+                if (callbackId == null ||
+                        !callbackId.matches("\\d+")) {
+                    return;
+                }
+
+                webView.evaluateJavascript(
+                        "if(window.__goldenTapAdResult){" +
+                        "window.__goldenTapAdResult('" +
+                        callbackId + "',false);}",
+                        null
+                );
+            });
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (webView != null) {
+            webView.destroy();
+            webView = null;
+        }
+        super.onDestroy();
+    }
 }
