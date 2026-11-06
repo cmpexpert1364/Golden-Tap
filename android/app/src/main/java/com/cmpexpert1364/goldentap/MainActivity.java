@@ -3,9 +3,10 @@ package com.cmpexpert1364.goldentap;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebView;
-import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
-import android.webkit.JavascriptInterface;
+import android.webkit.WebSettings;
+import android.webkit.WebChromeClient;
+import android.view.KeyEvent;
 
 public class MainActivity extends Activity {
 
@@ -16,55 +17,28 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         webView = new WebView(this);
+        setContentView(webView);
 
         WebSettings settings = webView.getSettings();
+
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
-
-        webView.addJavascriptInterface(
-                new AdBridge(),
-                "AndroidAds"
-        );
+        settings.setAllowContentAccess(true);
 
         webView.setWebViewClient(new WebViewClient());
-
-        setContentView(webView);
+        webView.setWebChromeClient(new WebChromeClient());
 
         webView.loadUrl("file:///android_asset/index.html");
     }
 
-    public class AdBridge {
-
-        @JavascriptInterface
-        public void showRewardedAd(
-                String placement,
-                String callbackId
-        ) {
-            runOnUiThread(() -> {
-
-                if (callbackId == null ||
-                        !callbackId.matches("\\d+")) {
-                    return;
-                }
-
-                webView.evaluateJavascript(
-                        "if(window.__goldenTapAdResult){" +
-                        "window.__goldenTapAdResult('" +
-                        callbackId + "',false);}",
-                        null
-                );
-            });
-        }
-    }
-
     @Override
-    protected void onDestroy() {
-        if (webView != null) {
-            webView.destroy();
-            webView = null;
+    public void onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
         }
-
-        super.onDestroy();
     }
 }
