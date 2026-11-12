@@ -1,72 +1,80 @@
 package com.cmpexpert1364.goldentap;
 
 import android.app.Activity;
-import android.webkit.WebView;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.webkit.WebView;
 
 import com.adivery.sdk.Adivery;
 import com.adivery.sdk.AdiveryListener;
+
+import org.json.JSONObject;
 
 public class AdsManager {
 
     private static final String TAG = "GoldenTapAds";
 
-    private static final String APP_KEY =
-            "2edbcef3-2bdb-4543-98c2-8e63eeac4fd1";
+    // مقادیر واقعی قبلی خودت را اینجا قرار بده
+    private static final String APP_KEY = "YOUR_EXISTING_APP_KEY";
+    private static final String PLACEMENT_ID = "YOUR_EXISTING_PLACEMENT_ID";
 
-    private static final String PLACEMENT_ID =
-            "06825fec-bfea-4f95-8166-b1445afce02b";
-
-    private static boolean initialized = false;
+    private static final long REQUEST_TIMEOUT = 90000L;
 
     private final Activity activity;
     private final WebView webView;
+    private final Handler handler = new Handler(Looper.getMainLooper());
 
+    private boolean initialized = false;
     private boolean loading = false;
     private boolean showRequested = false;
     private boolean adShowing = false;
     private boolean resultSent = false;
+
+    private String activeRequestId = null;
+
+    private Runnable timeoutRunnable;
 
     public AdsManager(Activity activity, WebView webView) {
         this.activity = activity;
         this.webView = webView;
     }
 
-    public void showRewarded() {
+    public void showRewarded(String requestId, String placement) {
 
         activity.runOnUiThread(() -> {
 
-            if (adShowing || showRequested) {
+            if (requestId == null || requestId.trim().isEmpty()) {
                 return;
             }
 
+            if (showRequested || adShowing) {
+                sendResult(requestId, false);
+                return;
+            }
+
+            activeRequestId = requestId;
             showRequested = true;
             resultSent = false;
 
-            if (!initialized) {
-                initializeAds();
-            }
+            startTimeout();
 
-            if (!initialized) {
-                failRequest();
-                return;
-            }
+            initializeAds();
 
             if (Adivery.isLoaded(PLACEMENT_ID)) {
                 displayAd();
             } else if (!loading) {
-
-                loading = true;
-
-                Adivery.prepareRewardedAd(
-                        activity,
-                        PLACEMENT_ID
-                );
+                prepareAd();
             }
+
         });
     }
 
     private void initializeAds() {
+
+        if (initialized) {
+            return;
+        }
 
         try {
 
@@ -88,7 +96,7 @@ public class AdsManager {
 
                         loading = false;
 
-                        // فقط در صورت درخواست کاربر نمایش بده
+                        // فقط وقتی درخواست واقعی وجود دارد نمایش بده
                         if (showRequested && !adShowing) {
                             displayAd();
                         }
@@ -99,7 +107,8 @@ public class AdsManager {
                 @Override
                 public void onRewardedAdClosed(
                         String placementId,
-                        boolean isRewarded) {
+                        boolean isRewarded
+                ) {
 
                     if (!PLACEMENT_ID.equals(placementId)) {
                         return;
@@ -114,13 +123,15 @@ public class AdsManager {
                         adShowing = false;
                         showRequested = false;
 
+                        cancelTimeout();
+
                         if (!resultSent) {
-                            resultSent = true;
-                            sendResult(isRewarded);
+                            sendActiveResult(isRewarded);
                         }
 
-                        // فقط آماده‌سازی تبلیغ بعدی
-                        // بدون پخش خودکار
+                        activeRequestId = null;
+
+                        // فقط آماده‌سازی تبلیغ بعدی؛ بدون نمایش خودکار
                         prepareNextAd();
 
                     });
@@ -128,25 +139,56 @@ public class AdsManager {
 
                 @Override
                 public void onAppOpenAdLoaded(String placementId) {
+                    // استفاده نمی‌شود
                 }
 
                 @Override
                 public void onInterstitialAdLoaded(String placementId) {
+                    // استفاده نمی‌شود
                 }
 
                 @Override
                 public void log(String placementId, String log) {
-
-                    Log.d(TAG, log);
+                    Log.d(TAG, placementId + " : " + log);
                 }
+
             });
 
             initialized = true;
 
         } catch (Exception e) {
 
-            Log.e(TAG, "Initialization error", e);
+            Log.e(TAG, "Adivery initialization failed", e);
             failRequest();
+
+        }
+    }
+
+    private void prepareAd() {
+
+        if (loading || adShowing) {
+            return;
+        }
+
+        try {
+
+            loading = true;
+
+            Adivery.prepareRewardedAd(
+                    activity,
+                    PLACEMENT_ID
+            );
+
+        } catch (Exception e) {
+
+            loading = false;
+
+            Log.e(TAG, "Prepare ad failed", e);
+
+            if (showRequested) {
+                failRequest();
+            }
+
         }
     }
 
@@ -156,24 +198,37 @@ public class AdsManager {
             return;
         }
 
+        if (activeRequestId == null) {
+            failRequest();
+            return;
+        }
+
+        if (!Adivery.isLoaded(PLACEMENT_ID)) {
+            if (!loading) {
+                prepareAd();
+            }
+            return;
+        }
+
         try {
 
-            if (!Adivery.isLoaded(PLACEMENT_ID)) {
-                return;
-            }
-
-            showRequested = false;
+            // قفل قبل از فراخوانی SDK
             adShowing = true;
-            resultSent = false;
+            showRequested = false;
 
             Adivery.showAd(PLACEMENT_ID);
 
+            Log.d(TAG, "Rewarded ad displayed");
+
         } catch (Exception e) {
 
-            Log.e(TAG, "Show ad error", e);
+            Log.e(TAG, "Show ad failed", e);
 
             adShowing = false;
+            showRequested = false;
+
             failRequest();
+
         }
     }
 
@@ -195,8 +250,45 @@ public class AdsManager {
         } catch (Exception e) {
 
             loading = false;
+            Log.e(TAG, "Next ad preparation failed", e);
 
-            Log.e(TAG, "Preload error", e);
+        }
+    }
+
+    private void startTimeout() {
+
+        cancelTimeout();
+
+        timeoutRunnable = () -> {
+
+            if (activeRequestId == null || resultSent) {
+                return;
+            }
+
+            Log.w(TAG, "Ad request timeout");
+
+            showRequested = false;
+            adShowing = false;
+
+            sendActiveResult(false);
+
+            activeRequestId = null;
+
+        };
+
+        handler.postDelayed(
+                timeoutRunnable,
+                REQUEST_TIMEOUT
+        );
+    }
+
+    private void cancelTimeout() {
+
+        if (timeoutRunnable != null) {
+
+            handler.removeCallbacks(timeoutRunnable);
+            timeoutRunnable = null;
+
         }
     }
 
@@ -204,32 +296,58 @@ public class AdsManager {
 
         showRequested = false;
         adShowing = false;
-        loading = false;
 
-        if (!resultSent) {
-            resultSent = true;
-            sendResult(false);
+        cancelTimeout();
+
+        if (!resultSent && activeRequestId != null) {
+            sendActiveResult(false);
         }
+
+        activeRequestId = null;
     }
 
-    private void sendResult(boolean completed) {
+    private void sendActiveResult(boolean completed) {
 
-        activity.runOnUiThread(() -> {
+        if (resultSent || activeRequestId == null) {
+            return;
+        }
 
-            if (activity.isFinishing() ||
-                    webView == null) {
-                return;
+        String requestId = activeRequestId;
+
+        resultSent = true;
+
+        sendResult(requestId, completed);
+    }
+
+    private void sendResult(
+            String requestId,
+            boolean completed
+    ) {
+
+        if (webView == null) {
+            return;
+        }
+
+        String safeId = JSONObject.quote(requestId);
+
+        String javascript =
+                "if(typeof window.onGoldenTapAdResult === 'function'){" +
+                "window.onGoldenTapAdResult(" +
+                safeId + "," +
+                completed + "," +
+                JSONObject.quote("") +
+                ");}";
+
+        webView.post(() -> {
+
+            if (webView != null) {
+                webView.evaluateJavascript(
+                        javascript,
+                        null
+                );
             }
 
-            String result = completed ? "true" : "false";
-
-            webView.evaluateJavascript(
-                    "if(window.onGoldenTapAdResult){" +
-                    "window.onGoldenTapAdResult(" +
-                    result +
-                    ");}",
-                    null
-            );
         });
+
     }
 }
