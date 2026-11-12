@@ -3,8 +3,8 @@ package com.cmpexpert1364.goldentap;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.webkit.WebView;
+import android.util.Log;
 
 import com.adivery.sdk.Adivery;
 import com.adivery.sdk.AdiveryListener;
@@ -15,69 +15,46 @@ public class AdsManager {
 
     private static final String TAG = "GoldenTapAds";
 
-    // مقادیر واقعی قبلی خودت را اینجا قرار بده
-    private static final String APP_KEY = "YOUR_EXISTING_APP_KEY";
-    private static final String PLACEMENT_ID = "YOUR_EXISTING_PLACEMENT_ID";
+    private static final String APP_KEY =
+            "2edbcef3-2bdb-4543-98c2-8e63eeac4fd1";
 
-    private static final long REQUEST_TIMEOUT = 90000L;
+    private static final String PLACEMENT_ID =
+            "06825fec-bfea-4f95-8166-b1445afce02b";
+
+    private static final long REQUEST_TIMEOUT = 90000;
 
     private final Activity activity;
     private final WebView webView;
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Handler handler =
+            new Handler(Looper.getMainLooper());
 
-    private boolean initialized = false;
-    private boolean loading = false;
-    private boolean showRequested = false;
+    private String activeRequestId = null;
+    private String activePlacement = PLACEMENT_ID;
+
+    private boolean requestPending = false;
     private boolean adShowing = false;
     private boolean resultSent = false;
 
-    private String activeRequestId = null;
-
-    private Runnable timeoutRunnable;
+    private final Runnable timeoutRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (requestPending && !resultSent) {
+                Log.w(TAG, "Ad request timed out");
+                finishRequest(false);
+            }
+        }
+    };
 
     public AdsManager(Activity activity, WebView webView) {
         this.activity = activity;
         this.webView = webView;
+
+        initializeAdivery();
     }
 
-    public void showRewarded(String requestId, String placement) {
-
-        activity.runOnUiThread(() -> {
-
-            if (requestId == null || requestId.trim().isEmpty()) {
-                return;
-            }
-
-            if (showRequested || adShowing) {
-                sendResult(requestId, false);
-                return;
-            }
-
-            activeRequestId = requestId;
-            showRequested = true;
-            resultSent = false;
-
-            startTimeout();
-
-            initializeAds();
-
-            if (Adivery.isLoaded(PLACEMENT_ID)) {
-                displayAd();
-            } else if (!loading) {
-                prepareAd();
-            }
-
-        });
-    }
-
-    private void initializeAds() {
-
-        if (initialized) {
-            return;
-        }
+    private void initializeAdivery() {
 
         try {
-
             Adivery.configure(
                     activity.getApplication(),
                     APP_KEY
@@ -88,19 +65,19 @@ public class AdsManager {
                 @Override
                 public void onRewardedAdLoaded(String placementId) {
 
-                    if (!PLACEMENT_ID.equals(placementId)) {
-                        return;
-                    }
+                    Log.d(TAG, "Rewarded ad loaded");
 
                     activity.runOnUiThread(() -> {
 
-                        loading = false;
-
-                        // فقط وقتی درخواست واقعی وجود دارد نمایش بده
-                        if (showRequested && !adShowing) {
-                            displayAd();
+                        if (!requestPending || adShowing) {
+                            return;
                         }
 
+                        if (!activePlacement.equals(placementId)) {
+                            return;
+                        }
+
+                        showLoadedAd();
                     });
                 }
 
@@ -110,235 +87,162 @@ public class AdsManager {
                         boolean isRewarded
                 ) {
 
-                    if (!PLACEMENT_ID.equals(placementId)) {
-                        return;
-                    }
+                    Log.d(TAG, "Rewarded ad closed: " + isRewarded);
 
                     activity.runOnUiThread(() -> {
 
-                        if (!adShowing) {
+                        if (!requestPending || resultSent) {
+                            return;
+                        }
+
+                        if (!activePlacement.equals(placementId)) {
                             return;
                         }
 
                         adShowing = false;
-                        showRequested = false;
-
-                        cancelTimeout();
-
-                        if (!resultSent) {
-                            sendActiveResult(isRewarded);
-                        }
-
-                        activeRequestId = null;
-
-                        // فقط آماده‌سازی تبلیغ بعدی؛ بدون نمایش خودکار
-                        prepareNextAd();
-
+                        finishRequest(isRewarded);
                     });
                 }
 
                 @Override
                 public void onAppOpenAdLoaded(String placementId) {
-                    // استفاده نمی‌شود
                 }
 
                 @Override
                 public void onInterstitialAdLoaded(String placementId) {
-                    // استفاده نمی‌شود
                 }
 
                 @Override
-                public void log(String placementId, String log) {
-                    Log.d(TAG, placementId + " : " + log);
+                public void log(String placementId, String message) {
+                    Log.d(TAG, "Adivery: " + message);
                 }
-
             });
 
-            initialized = true;
+            prepareNextAd();
 
         } catch (Exception e) {
-
-            Log.e(TAG, "Adivery initialization failed", e);
-            failRequest();
-
+            Log.e(TAG, "Adivery initialization error", e);
         }
     }
 
-    private void prepareAd() {
+    public void showRewarded(String requestId, String placement) {
 
-        if (loading || adShowing) {
-            return;
-        }
+        activity.runOnUiThread(() -> {
 
-        try {
-
-            loading = true;
-
-            Adivery.prepareRewardedAd(
-                    activity,
-                    PLACEMENT_ID
-            );
-
-        } catch (Exception e) {
-
-            loading = false;
-
-            Log.e(TAG, "Prepare ad failed", e);
-
-            if (showRequested) {
-                failRequest();
-            }
-
-        }
-    }
-
-    private void displayAd() {
-
-        if (!showRequested || adShowing) {
-            return;
-        }
-
-        if (activeRequestId == null) {
-            failRequest();
-            return;
-        }
-
-        if (!Adivery.isLoaded(PLACEMENT_ID)) {
-            if (!loading) {
-                prepareAd();
-            }
-            return;
-        }
-
-        try {
-
-            // قفل قبل از فراخوانی SDK
-            adShowing = true;
-            showRequested = false;
-
-            Adivery.showAd(PLACEMENT_ID);
-
-            Log.d(TAG, "Rewarded ad displayed");
-
-        } catch (Exception e) {
-
-            Log.e(TAG, "Show ad failed", e);
-
-            adShowing = false;
-            showRequested = false;
-
-            failRequest();
-
-        }
-    }
-
-    private void prepareNextAd() {
-
-        if (loading || adShowing) {
-            return;
-        }
-
-        try {
-
-            loading = true;
-
-            Adivery.prepareRewardedAd(
-                    activity,
-                    PLACEMENT_ID
-            );
-
-        } catch (Exception e) {
-
-            loading = false;
-            Log.e(TAG, "Next ad preparation failed", e);
-
-        }
-    }
-
-    private void startTimeout() {
-
-        cancelTimeout();
-
-        timeoutRunnable = () -> {
-
-            if (activeRequestId == null || resultSent) {
+            if (requestId == null || requestId.trim().isEmpty()) {
+                Log.w(TAG, "Invalid request ID");
                 return;
             }
 
-            Log.w(TAG, "Ad request timeout");
+            if (requestPending || adShowing) {
+                Log.w(TAG, "Another ad request is active");
+                return;
+            }
 
-            showRequested = false;
-            adShowing = false;
+            activeRequestId = requestId;
+            activePlacement = PLACEMENT_ID;
 
-            sendActiveResult(false);
+            if (placement != null &&
+                    PLACEMENT_ID.equals(placement.trim())) {
+                activePlacement = placement.trim();
+            }
 
-            activeRequestId = null;
-
-        };
-
-        handler.postDelayed(
-                timeoutRunnable,
-                REQUEST_TIMEOUT
-        );
-    }
-
-    private void cancelTimeout() {
-
-        if (timeoutRunnable != null) {
+            requestPending = true;
+            resultSent = false;
 
             handler.removeCallbacks(timeoutRunnable);
-            timeoutRunnable = null;
+            handler.postDelayed(timeoutRunnable, REQUEST_TIMEOUT);
 
-        }
+            try {
+
+                if (Adivery.isLoaded(activePlacement)) {
+                    showLoadedAd();
+                } else {
+                    Adivery.prepareRewardedAd(
+                            activity,
+                            activePlacement
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Could not request rewarded ad", e);
+                finishRequest(false);
+            }
+        });
     }
 
-    private void failRequest() {
+    private void showLoadedAd() {
 
-        showRequested = false;
-        adShowing = false;
-
-        cancelTimeout();
-
-        if (!resultSent && activeRequestId != null) {
-            sendActiveResult(false);
-        }
-
-        activeRequestId = null;
-    }
-
-    private void sendActiveResult(boolean completed) {
-
-        if (resultSent || activeRequestId == null) {
+        if (!requestPending || adShowing || resultSent) {
             return;
         }
 
-        String requestId = activeRequestId;
+        try {
 
-        resultSent = true;
+            if (!Adivery.isLoaded(activePlacement)) {
+                return;
+            }
 
-        sendResult(requestId, completed);
+            adShowing = true;
+
+            Log.d(TAG, "Showing rewarded ad");
+
+            Adivery.showAd(activePlacement);
+
+        } catch (Exception e) {
+
+            Log.e(TAG, "Could not show rewarded ad", e);
+
+            adShowing = false;
+            finishRequest(false);
+        }
     }
 
-    private void sendResult(
+    private void finishRequest(boolean completed) {
+
+        if (resultSent || !requestPending) {
+            return;
+        }
+
+        resultSent = true;
+        requestPending = false;
+        adShowing = false;
+
+        handler.removeCallbacks(timeoutRunnable);
+
+        String requestId = activeRequestId;
+
+        activeRequestId = null;
+
+        sendResultToWebView(
+                requestId,
+                completed
+        );
+
+        prepareNextAd();
+    }
+
+    private void sendResultToWebView(
             String requestId,
             boolean completed
     ) {
 
-        if (webView == null) {
+        if (requestId == null || webView == null) {
             return;
         }
 
-        String safeId = JSONObject.quote(requestId);
+        String safeRequestId = JSONObject.quote(requestId);
 
         String javascript =
-                "if(typeof window.onGoldenTapAdResult === 'function'){" +
+                "if (window.onGoldenTapAdResult) {" +
                 "window.onGoldenTapAdResult(" +
-                safeId + "," +
+                safeRequestId + "," +
                 completed + "," +
-                JSONObject.quote("") +
-                ");}";
+                "\"\"" +
+                ");" +
+                "}";
 
-        webView.post(() -> {
+        activity.runOnUiThread(() -> {
 
             if (webView != null) {
                 webView.evaluateJavascript(
@@ -346,8 +250,41 @@ public class AdsManager {
                         null
                 );
             }
-
         });
+    }
 
+    public void prepareNextAd() {
+
+        activity.runOnUiThread(() -> {
+
+            if (requestPending || adShowing) {
+                return;
+            }
+
+            try {
+
+                if (!Adivery.isLoaded(PLACEMENT_ID)) {
+
+                    Log.d(TAG, "Preparing next rewarded ad");
+
+                    Adivery.prepareRewardedAd(
+                            activity,
+                            PLACEMENT_ID
+                    );
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Preparing next ad failed", e);
+            }
+        });
+    }
+
+    public void destroy() {
+
+        handler.removeCallbacks(timeoutRunnable);
+
+        requestPending = false;
+        adShowing = false;
+        activeRequestId = null;
     }
 }
