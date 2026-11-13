@@ -27,15 +27,15 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebViewClient(new WebViewClient());
+
         adsManager = new AdsManager(this, webView);
 
         webView.addJavascriptInterface(
                 new AdsBridge(),
                 "AndroidGoldenTapAds"
         );
-
-        webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient());
 
         webView.loadUrl(
                 "file:///android_asset/index.html"
@@ -62,10 +62,29 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
+        if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        if (adsManager != null) {
+            adsManager.destroy();
+            adsManager = null;
+        }
+
+        if (webView != null) {
+            webView.removeJavascriptInterface(
+                    "AndroidGoldenTapAds"
+            );
+            webView.destroy();
+            webView = null;
+        }
+
+        super.onDestroy();
     }
 }
